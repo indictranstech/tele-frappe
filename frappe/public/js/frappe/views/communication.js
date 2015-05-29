@@ -435,4 +435,3 @@ frappe.views.CommunicationComposer = Class.extend({
 			});
 	}
 });
-
