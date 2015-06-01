@@ -22,38 +22,13 @@ frappe.ui.form.Comments = Class.extend({
 						txt: frappe.markdown(me.input.val()),
 						frm: me.frm
 					})
+					recipients = me.frm.doc.raised_by? me.frm.doc.raised_by : me.frm.doc.contact_email? me.frm.doc.contact_email : "";
+					$("input[data-fieldname='recipients']").val(recipients);
+
 				} else if (me.wrapper.find(".is-sms").prop("checked")){
 					var _me = this;
-					_me.dialog = new frappe.ui.Dialog({
-						title: __("Add Reply") + ": " + (this.subject || ""),
-						no_submit_on_enter: true,
-						fields: [
-							// fetch the customer numner
-							{label:__("To"), fieldtype:"Data", reqd: 1, fieldname:"recipients"},
-
-							{fieldtype: "Section Break"},
-							{label:__("Message"), fieldtype:"Small Text", reqd: 1,
-								fieldname:"content"},
-						],
-						primary_action_label: "Send",
-						primary_action: function() {
-							to = $("input[data-fieldname$='recipients']").val().split(",");
-							msg = $("textarea[data-fieldname$='content']").val();
-
-							return frappe.call({
-								method: "erpnext.setup.doctype.sms_settings.sms_settings.send_sms",
-								args: {
-									receiver_list: to,
-									msg: msg
-								},
-								callback: function(r) {
-									_me.dialog.hide();
-									if(r.exc) {msgprint(r.exc); return; }
-								}
-							});
-						}
-					});
-
+					_me.dialog = reder_sms_dialog();
+					_me.dialog.set_value("recipients", me.frm.doc.phone? me.frm.doc.phone : me.frm.doc.contact_mobile?me.frm.doc.contact_mobile:"");
 					_me.dialog.show();
 				} else {
 					me.add_comment(this);
@@ -330,3 +305,36 @@ frappe.ui.form.Comments = Class.extend({
 		return last_email;
 	}
 })
+
+
+reder_sms_dialog = function(){
+	return new frappe.ui.Dialog({
+		title: __("Add Reply") + ": " + (this.subject || ""),
+		no_submit_on_enter: true,
+		fields: [
+			// fetch the customer numner
+			{label:__("To"), fieldtype:"Data", reqd: 1, fieldname:"recipients"},
+
+			{fieldtype: "Section Break"},
+			{label:__("Message"), fieldtype:"Small Text", reqd: 1,
+				fieldname:"content"},
+		],
+		primary_action_label: "Send",
+		primary_action: function() {
+			to = $("input[data-fieldname$='recipients']").val().split(",");
+			msg = $("textarea[data-fieldname$='content']").val();
+
+			return frappe.call({
+				method: "erpnext.setup.doctype.sms_settings.sms_settings.send_sms",
+				args: {
+					receiver_list: to,
+					msg: msg
+				},
+				callback: function(r) {
+					_me.dialog.hide();
+					if(r.exc) {msgprint(r.exc); return; }
+				}
+			});
+		}
+	});
+}
