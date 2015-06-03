@@ -29,11 +29,13 @@ frappe.ui.form.Comments = Class.extend({
 					var _me = this;
 					_me.dialog = reder_sms_dialog(me, _me, false);
 					_me.dialog.set_value("recipients", me.frm.doc.phone? me.frm.doc.phone : me.frm.doc.contact_mobile?me.frm.doc.contact_mobile:"");
+					_me.dialog.set_value('content', me.input.val());
 					_me.dialog.show();
 				} else if (me.wrapper.find(".is-both").prop("checked")){
 					var _me = this;
 					_me.dialog = reder_sms_dialog(me, _me, true);
 					_me.dialog.set_value("recipients", me.frm.doc.phone? me.frm.doc.phone : me.frm.doc.contact_mobile?me.frm.doc.contact_mobile:"");
+					_me.dialog.set_value('content', me.input.val());
 					_me.dialog.show();
 				}else {
 					me.add_comment(this);
@@ -77,7 +79,8 @@ frappe.ui.form.Comments = Class.extend({
 				if(c.comment) me.render_comment(c);
 		});
 
-		this.wrapper.find(".is-email").prop("checked", this.last_type==="Email").change();
+		if(['Issue','Maintenance Schedule'].indexOf(me.frm.doctype) == -1)
+			this.wrapper.find(".is-email").prop("checked", this.last_type==="Email").change();
 
 		this.frm.sidebar.refresh_comments();
 
@@ -347,6 +350,7 @@ reder_sms_dialog = function(me, _me,email_dialog){
 						})
 						recipients = me.frm.doc.raised_by? me.frm.doc.raised_by : me.frm.doc.contact_email? me.frm.doc.contact_email : "";
 						$("input[data-fieldname='recipients']").val(recipients);
+						$(".frappe-list").val(msg);
 					}
 					if(r.exc) {
 						msgprint(r.exc);
