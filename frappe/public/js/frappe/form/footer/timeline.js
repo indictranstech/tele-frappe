@@ -315,7 +315,6 @@ frappe.ui.form.Comments = Class.extend({
 	}
 })
 
-
 reder_sms_dialog = function(me, _me,email_dialog){
 	return new frappe.ui.Dialog({
 		title: __("Add Reply") + ": " + (this.subject || ""),
@@ -342,7 +341,6 @@ reder_sms_dialog = function(me, _me,email_dialog){
 				callback: function(r) {
 					_me.dialog.hide();
 					if (email_dialog){
-						console.log(me)
 						new frappe.views.CommunicationComposer({
 							doc: me.frm.doc,
 							txt: frappe.markdown(me.input.val()),
