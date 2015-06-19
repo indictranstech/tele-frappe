@@ -15,7 +15,8 @@ files_path = 'public/files'
 public_path = 'public'
 
 # max file attachment size (default 1MB)
-max_file_size = 1000000
+# max_file_size = 1000000
+max_file_size = 20971520
 
 # max email size in bytes
 max_email_size = 0
