@@ -185,7 +185,7 @@ class User:
 		return self.can_read
 
 	def load_user(self):
-		d = frappe.db.sql("""select email, first_name, last_name, time_zone,
+		d = frappe.db.sql("""select email, first_name, last_name,
 			email_signature, user_type, language, background_image, background_style
 			from tabUser where name = %s""", (self.name,), as_dict=1)[0]
 
@@ -285,3 +285,6 @@ def get_enabled_system_users():
 
 def is_website_user():
 	return frappe.get_user().doc.user_type == "Website User"
+
+def is_system_user(username):
+	return frappe.db.get_value("User", {"name": username, "enabled": 1, "user_type": "System User"})

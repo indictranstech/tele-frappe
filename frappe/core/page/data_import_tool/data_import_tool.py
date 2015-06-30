@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-import frappe, json, os
+import frappe, os
 from frappe import _
 import frappe.modules.import_file
 
@@ -43,7 +43,7 @@ def export_csv(doctype, path):
 		get_template(doctype=doctype, all_doctypes="Yes", with_data="Yes")
 		csvfile.write(frappe.response.result.encode("utf-8"))
 
-def export_json(doctype, path, filters=None):
+def export_json(doctype, path, filters=None, name=None):
 	def post_process(out):
 		del_keys = ('parent', 'parentfield', 'parenttype', 'modified_by', 'creation', 'owner', 'idx')
 		for doc in out:
@@ -57,9 +57,10 @@ def export_json(doctype, path, filters=None):
 							if key in child:
 								del child[key]
 
-	from frappe.utils.response import json_handler
 	out = []
-	if frappe.db.get_value("DocType", doctype, "issingle"):
+	if name:
+		out.append(frappe.get_doc(doctype, name).as_dict())
+	elif frappe.db.get_value("DocType", doctype, "issingle"):
 		out.append(frappe.get_doc(doctype).as_dict())
 	else:
 		for doc in frappe.get_all(doctype, fields=["name"], filters=filters, limit_page_length=0, order_by="creation asc"):
@@ -85,11 +86,10 @@ def import_doc(path, overwrite=False, ignore_links=False, ignore_insert=False, i
 	else:
 		files = [path]
 
-
 	for f in files:
 		if f.endswith(".json"):
 			frappe.flags.mute_emails = True
-			frappe.modules.import_file.import_file_by_path(f, data_import=True)
+			frappe.modules.import_file.import_file_by_path(f, data_import=True, force=True)
 			frappe.flags.mute_emails = False
 		elif f.endswith(".csv"):
 			import_file_by_path(f, ignore_links=ignore_links, overwrite=overwrite, submit=submit)
