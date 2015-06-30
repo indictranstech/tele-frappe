@@ -5,7 +5,8 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import validate_email_add, cint, get_datetime, DATE_FORMAT
+from frappe.utils import validate_email_add, cint, get_datetime, DATE_FORMAT, strip
+from frappe.utils.user import is_system_user
 from frappe.email.smtp import SMTPServer
 from frappe.email.receive import POP3Server, Email
 from poplib import error_proto
@@ -30,8 +31,17 @@ class EmailAccount(Document):
 		if self.email_id:
 			validate_email_add(self.email_id, True)
 
+		if self.login_id_is_different:
+			if not self.login_id:
+				frappe.throw(_("Login Id is required"))
+		else:
+			self.login_id = None
+
 		if frappe.local.flags.in_patch or frappe.local.flags.in_test:
 			return
+
+		if self.enable_incoming and not self.append_to:
+			frappe.throw(_("Append To is mandatory for incoming mails"))
 
 		if not frappe.local.flags.in_install and not frappe.local.flags.in_patch:
 			if self.enable_incoming:
@@ -67,7 +77,8 @@ class EmailAccount(Document):
 			if not self.smtp_server:
 				frappe.throw(_("{0} is required").format("SMTP Server"))
 
-			server = SMTPServer(login = self.email_id,
+			server = SMTPServer(login = getattr(self, "login_id", None) \
+					or self.email_id,
 				password = self.password,
 				server = self.smtp_server,
 				port = cint(self.smtp_port),
@@ -80,7 +91,7 @@ class EmailAccount(Document):
 		args = {
 			"host": self.pop3_server,
 			"use_ssl": self.use_ssl,
-			"username": self.email_id,
+			"username": getattr(self, "login_id", None) or self.email_id,
 			"password": self.password
 		}
 
@@ -179,22 +190,45 @@ class EmailAccount(Document):
 					parent = frappe.get_doc("Communication", in_reply_to)
 
 					if parent.reference_name:
-						# parent same as parent of last communication
-						parent = frappe.get_doc(parent.reference_doctype,
-							parent.reference_name)
+						if self.append_to:
+							# parent must reference only if name matches
+							if parent.reference_doctype==self.append_to:
+								# parent same as parent of last communication
+								parent = frappe.get_doc(parent.reference_doctype,
+									parent.reference_name)
+						else:
+							parent = frappe.get_doc(parent.reference_doctype,
+								parent.reference_name)
 
-		if not parent and self.append_to and subject_field and sender_field:
-			# try and match by subject and sender
-			# if sent by same sender with same subject,
-			# append it to old coversation
+		if not parent and self.append_to and sender_field:
+			if subject_field:
+				# try and match by subject and sender
+				# if sent by same sender with same subject,
+				# append it to old coversation
+				subject = strip(re.sub("^\s*(Re|RE)[^:]*:\s*", "", email.subject))
 
-			subject = re.sub("Re[^:]*:\s*", "", email.subject)
+				parent = frappe.db.get_all(self.append_to, filters={
+					sender_field: email.from_email,
+					subject_field: ("like", "%{0}%".format(subject)),
+					"creation": (">", (get_datetime() - relativedelta(days=10)).strftime(DATE_FORMAT))
+				}, fields="name")
 
-			parent = frappe.db.get_all(self.append_to, filters={
-				sender_field: email.from_email,
-				subject_field: ("like", "%{0}%".format(subject)),
-				"creation": (">", (get_datetime() - relativedelta(days=10)).strftime(DATE_FORMAT))
-			}, fields="name")
+				# match only subject field
+				# when the from_email is of a user in the system
+				# and subject is atleast 10 chars long
+				if not parent and len(subject) > 10 and is_system_user(email.from_email):
+					parent = frappe.db.get_all(self.append_to, filters={
+						subject_field: ("like", "%{0}%".format(subject)),
+						"creation": (">", (get_datetime() - relativedelta(days=10)).strftime(DATE_FORMAT))
+					}, fields="name")
+
+			else:
+				# try and match by sender only
+				# as there is no subject field, it implies that threading isn't by subject, but by sender only
+
+				parent = frappe.db.get_all(self.append_to, filters={
+					sender_field: email.from_email,
+				}, fields="name")
 
 			if parent:
 				parent = frappe.get_doc(self.append_to, parent[0].name)

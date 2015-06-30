@@ -28,8 +28,8 @@ frappe.ui.form.Control = Class.extend({
 	make: function() {
 		this.make_wrapper();
 		this.$wrapper
-			.addClass("ui-front")
-			.attr("data-fieldtype", this.df.fieldtype);
+			.attr("data-fieldtype", this.df.fieldtype)
+			.attr("data-fieldname", this.df.fieldname);
 		this.wrapper = this.$wrapper.get(0);
 		this.wrapper.fieldobj = this; // reference for event handlers
 	},
@@ -505,10 +505,16 @@ frappe.ui.form.ControlDate = frappe.ui.form.ControlData.extend({
 		this.$input.datepicker(this.datepicker_options);
 	},
 	parse: function(value) {
-		return value ? dateutil.user_to_str(value) : value;
+		if(value) {
+			value = dateutil.user_to_str(value);
+		}
+		return value;
 	},
 	format_for_input: function(value) {
-		return value ? dateutil.str_to_user(value) : "";
+		if(value) {
+			value = dateutil.str_to_user(value);
+		}
+		return value || "";
 	},
 	validate: function(value, callback) {
 		if(!dateutil.validate(value)) {
@@ -550,6 +556,21 @@ frappe.ui.form.ControlDatetime = frappe.ui.form.ControlDate.extend({
 	make_input: function() {
 		import_timepicker();
 		this._super();
+	},
+	parse: function(value) {
+		if(value) {
+			// parse and convert
+			value = dateutil.convert_to_system_tz(dateutil.user_to_str(value));
+		}
+		return value;
+	},
+	format_for_input: function(value) {
+		if(value) {
+			// convert and format
+			value = dateutil.str_to_user(dateutil.convert_to_user_tz(value));
+
+		}
+		return value || "";
 	},
 
 });
@@ -912,7 +933,7 @@ frappe.ui.form.ControlSelect = frappe.ui.form.ControlData.extend({
 frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 	make_input: function() {
 		var me = this;
-		$('<div class="link-field" style="position: relative;">\
+		$('<div class="link-field ui-front" style="position: relative;">\
 			<input type="text" class="input-with-feedback form-control">\
 			<span class="link-btn">\
 				<a class="btn-open no-decoration" title="' + __("Open Link") + '">\
@@ -1052,9 +1073,11 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 				});
 			},
 			open: function(event, ui) {
+				me.$wrapper.css({"z-index": 101});
 				me.autocomplete_open = true;
 			},
 			close: function(event, ui) {
+				me.$wrapper.css({"z-index": 1});
 				me.autocomplete_open = false;
 			},
 			focus: function( event, ui ) {

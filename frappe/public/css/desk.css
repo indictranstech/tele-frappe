@@ -361,13 +361,12 @@ ul.linked-with-list li {
   padding: 7px;
   font-size: 12px;
 }
+@media (min-width: 768px) {
+  .video-modal {
+    width: 700px;
+  }
+}
 /* z-index hack */
-.ui-datepicker {
-  z-index: 9999999 !important;
-}
-.ui-autocomplete {
-  z-index: 9999999 !important;
-}
 @media (min-width: 768px) {
   .hidden-xs-inline {
     display: inline;
@@ -394,6 +393,18 @@ ul.linked-with-list li {
 }
 .modal-title {
   margin-top: 5px;
+}
+.form-control {
+  position: relative;
+}
+.link-field.ui-front {
+  z-index: inherit;
+}
+.modal .hasDatepicker {
+  z-index: 1140;
+}
+.modal .link-field .ui-autocomplete {
+  z-index: 1141;
 }
 .form-group {
   margin-bottom: 7px;
