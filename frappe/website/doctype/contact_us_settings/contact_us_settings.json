@@ -77,7 +77,7 @@
   {
    "fieldname": "pincode", 
    "fieldtype": "Data", 
-   "label": "Pincode", 
+   "label": "Zip Code", 
    "permlevel": 0
   }, 
   {
@@ -90,7 +90,7 @@
  "icon": "icon-cog", 
  "idx": 1, 
  "issingle": 1, 
- "modified": "2015-03-11 18:08:13.531919", 
+ "modified": "2015-07-28 00:50:15.147335", 
  "modified_by": "Administrator", 
  "module": "Website", 
  "name": "Contact Us Settings", 
